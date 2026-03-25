@@ -3,7 +3,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json ./
-COPY index.html app.js styles.css server.js boris-noiva-header.png ./
+COPY index.html app.js styles.css server.js boris-noiva-header-v2.png ./
 COPY data ./data
 
 RUN mkdir -p /app/storage
