@@ -1,5 +1,4 @@
 const GENERAL_TASKS_ENTRY_ID = "__general_tasks__";
-const LAST_WORKSPACE_KEY = "fechamento-casamento-last-workspace";
 const ONBOARDING_DISMISSED_PREFIX = "fechamento-casamento-onboarding-dismissed:";
 const ADD_PERSON_OPTION_VALUE = "__add_person__";
 const API_BASE = "/api";
@@ -190,7 +189,6 @@ const elements = {
   workspaceDescription: document.querySelector("#workspace-description"),
   shareLink: document.querySelector("#share-link"),
   copyShareLink: document.querySelector("#copy-share-link"),
-  createNewWorkspace: document.querySelector("#create-new-workspace"),
 };
 
 initialize();
@@ -217,7 +215,6 @@ function bindEvents() {
   elements.cancelTaskModal.addEventListener("click", closeTaskModal);
   elements.saveTaskModal.addEventListener("click", saveTaskModalChanges);
   elements.copyShareLink.addEventListener("click", copyShareLink);
-  elements.createNewWorkspace.addEventListener("click", handleCreateNewWorkspace);
   elements.startOnboarding.addEventListener("click", startOnboardingFlow);
   elements.skipOnboarding.addEventListener("click", skipOnboardingFlow);
   elements.quickstartButtons.forEach((button) => {
@@ -329,23 +326,18 @@ function bindEvents() {
 
 async function bootstrapWorkspace() {
   setSyncStatus("Preparando espaço compartilhado...");
-  if (window.location.pathname === "/" || window.location.pathname === "/casamento") {
-    window.location.replace("/c/casamento-principal");
-    return;
-  }
-
   const slugFromPath = getWorkspaceSlugFromPath();
-  const rememberedSlug = readRememberedWorkspaceSlug();
 
-  if (!slugFromPath) {
-    await bootstrapDefaultWorkspace();
+  if (slugFromPath !== "casamento-principal") {
+    setSyncStatus("Use somente o link oficial deste casamento.");
+    document.body.innerHTML =
+      '<main style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#fff7f0;font-family:Manrope,sans-serif;"><div style="max-width:640px;padding:32px;border-radius:28px;background:#fffdfa;border:1px solid rgba(23,59,73,.12);box-shadow:0 20px 48px rgba(24,59,71,.08);"><p style="margin:0 0 8px;color:#d76419;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;">Link inválido</p><h1 style="margin:0 0 12px;font-family:Fraunces,serif;color:#163240;">Abra o painel oficial do casamento</h1><p style="margin:0 0 18px;color:#6d7d84;line-height:1.6;">Este aplicativo agora funciona apenas em um link fixo.</p><a href="/c/casamento-principal" style="display:inline-flex;padding:13px 18px;border-radius:999px;background:linear-gradient(180deg,#ef7a2d,#d76419);color:#fffdfa;text-decoration:none;font-weight:800;">Ir para o painel oficial</a></div></main>';
     return;
   }
 
   try {
     const response = await fetchJson(`${API_BASE}/workspaces/${slugFromPath}`);
     hydrateWorkspace(response.workspace);
-    rememberWorkspaceSlug(state.workspaceSlug);
     state.isLoading = false;
     render();
     renderGlobalTasks();
@@ -354,20 +346,8 @@ async function bootstrapWorkspace() {
     setSyncStatus("Painel compartilhado pronto.");
   } catch (error) {
     console.error(error);
-    if (slugFromPath === "casamento-principal") {
-      setSyncStatus("O painel fixo do casamento ainda não foi preparado no servidor.");
-      return;
-    }
-
-    setSyncStatus("Não foi possível abrir este painel. Criando um novo...");
-    await createWorkspaceAndRedirect();
+    setSyncStatus("O painel oficial do casamento não foi encontrado no servidor.");
   }
-}
-
-async function bootstrapDefaultWorkspace() {
-  const response = await fetchJson(`${API_BASE}/bootstrap`);
-  rememberWorkspaceSlug(response.workspace.slug);
-  window.location.replace(`/c/${response.workspace.slug}`);
 }
 
 function hydrateWorkspace(workspace) {
@@ -383,7 +363,7 @@ function updateWorkspaceUI() {
   elements.workspaceTitle.textContent = state.workspaceName;
   elements.workspaceNameInput.value = state.workspaceName;
   elements.workspaceDescription.textContent =
-    "Sem senha: qualquer pessoa com este link pode abrir e editar o mesmo painel do casal.";
+    "Este é o link oficial e único do seu casamento. Quem tiver esse link pode abrir e editar o painel.";
   elements.shareLink.value = state.shareUrl;
   elements.shareLink.setAttribute("aria-label", `Link compartilhável de ${state.workspaceName}`);
 }
@@ -451,29 +431,6 @@ function focusForm() {
   }, 200);
 }
 
-async function createWorkspaceAndRedirect() {
-  const response = await fetchJson(`${API_BASE}/workspaces`, {
-    method: "POST",
-    body: JSON.stringify({}),
-  });
-
-  rememberWorkspaceSlug(response.workspace.slug);
-  window.location.replace(`/c/${response.workspace.slug}`);
-}
-
-async function handleCreateNewWorkspace() {
-  const shouldCreate = window.confirm(
-    "Criar um novo painel vazio? O painel atual continua existindo no link atual."
-  );
-
-  if (!shouldCreate) {
-    return;
-  }
-
-  setSyncStatus("Criando novo painel...");
-  await createWorkspaceAndRedirect();
-}
-
 async function copyShareLink() {
   try {
     await navigator.clipboard.writeText(state.shareUrl);
@@ -489,23 +446,6 @@ async function copyShareLink() {
 function getWorkspaceSlugFromPath() {
   const match = window.location.pathname.match(/^\/c\/([a-z0-9-]+)$/i);
   return match ? match[1] : "";
-}
-
-function rememberWorkspaceSlug(slug) {
-  try {
-    window.localStorage.setItem(LAST_WORKSPACE_KEY, slug);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-function readRememberedWorkspaceSlug() {
-  try {
-    return window.localStorage.getItem(LAST_WORKSPACE_KEY) || "";
-  } catch (error) {
-    console.error(error);
-    return "";
-  }
 }
 
 function rememberOnboardingDismissed(slug) {

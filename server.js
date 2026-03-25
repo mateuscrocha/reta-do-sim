@@ -13,7 +13,6 @@ const STORAGE_FILE = process.env.DATA_FILE
   : path.join(STORAGE_DIR, "workspaces.json");
 const LEGACY_IMPORT_FILE = path.join(ROOT_DIR, "data", "fechamento-casamento-recuperado.json");
 const FIXED_WEDDING_WORKSPACE_SLUG = "casamento-principal";
-const FIXED_WEDDING_SHORT_PATH = "/casamento";
 
 const PUBLIC_FILES = {
   "/app.js": { file: path.join(ROOT_DIR, "app.js"), type: "application/javascript; charset=utf-8" },
@@ -53,41 +52,14 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (pathname === "/api/bootstrap" && request.method === "GET") {
-    const workspace = await updateStore((store) => {
-      const fixedWorkspace = store.workspaces[FIXED_WEDDING_WORKSPACE_SLUG];
-      if (fixedWorkspace) {
-        return fixedWorkspace;
-      }
-
-      const existingWorkspaces = Object.values(store.workspaces);
-
-      if (existingWorkspaces.length > 0) {
-        return getMostRecentWorkspace(existingWorkspaces);
-      }
-
-      const nextWorkspace = buildWorkspace();
-      store.workspaces[nextWorkspace.slug] = nextWorkspace;
-      return nextWorkspace;
-    });
-
-    sendJson(response, 200, { workspace });
-    return;
-  }
-
-  if (pathname === "/api/workspaces" && request.method === "POST") {
-    const workspace = await updateStore((store) => {
-      const nextWorkspace = buildWorkspace();
-      store.workspaces[nextWorkspace.slug] = nextWorkspace;
-      return nextWorkspace;
-    });
-    sendJson(response, 201, { workspace });
-    return;
-  }
-
   const workspaceMatch = pathname.match(/^\/api\/workspaces\/([a-z0-9-]+)$/i);
   if (workspaceMatch) {
     const slug = workspaceMatch[1];
+    if (slug !== FIXED_WEDDING_WORKSPACE_SLUG) {
+      sendJson(response, 404, { error: "workspace_not_found" });
+      return;
+    }
+
     const store = await readStore();
     const workspace = store.workspaces[slug];
 
@@ -136,35 +108,12 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (request.method === "GET" && (pathname === "/" || pathname === FIXED_WEDDING_SHORT_PATH)) {
-    response.writeHead(302, {
-      Location: `/c/${FIXED_WEDDING_WORKSPACE_SLUG}`,
-      "Cache-Control": "no-cache",
-    });
-    response.end();
-    return;
-  }
-
-  if (request.method === "GET" && /^\/c\/[a-z0-9-]+$/i.test(pathname)) {
+  if (request.method === "GET" && pathname === `/c/${FIXED_WEDDING_WORKSPACE_SLUG}`) {
     await sendFile(response, path.join(ROOT_DIR, "index.html"), "text/html; charset=utf-8");
     return;
   }
 
   sendJson(response, 404, { error: "not_found" });
-}
-
-function buildWorkspace() {
-  const slug = crypto.randomBytes(6).toString("base64url").toLowerCase();
-  const now = new Date().toISOString();
-
-  return {
-    slug,
-    name: `Painel do casal ${slug.slice(0, 6).toUpperCase()}`,
-    entries: [],
-    generalTasks: [],
-    createdAt: now,
-    updatedAt: now,
-  };
 }
 
 async function ensureStorage() {
@@ -345,12 +294,4 @@ function normalizeTasks(tasks) {
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function getMostRecentWorkspace(workspaces) {
-  return [...workspaces].sort((left, right) => {
-    const leftTime = new Date(left.updatedAt || left.createdAt || 0).getTime();
-    const rightTime = new Date(right.updatedAt || right.createdAt || 0).getTime();
-    return rightTime - leftTime;
-  })[0];
 }
