@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reta do Sim</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="topbar-copy">
+          <p class="eyebrow">Planejamento do casamento</p>
+          <h1 class="topbar-title">Reta do Sim</h1>
+          <p class="topbar-subtitle">Custos, ressarcimentos e tarefas em uma visão clara da reta final.</p>
+        </div>
+        <div class="topbar-status">
+          <span class="topbar-status-label">Espaço compartilhado</span>
+          <p id="sync-status" class="sync-status sync-status-compact">Preparando painel...</p>
+        </div>
+      </header>
+
+      <section class="workspace-banner" aria-label="Painel compartilhável">
+        <div class="workspace-copy">
+          <p class="panel-kicker">Multiusuário sem senha</p>
+          <h2 id="workspace-title">Preparando o painel do casal...</h2>
+          <div class="workspace-name-editor">
+            <label class="workspace-name-field">
+              Nome do casal
+              <input
+                id="workspace-name-input"
+                type="text"
+                maxlength="120"
+                placeholder="Ex.: Alice e Matheus"
+              />
+            </label>
+            <button id="save-workspace-name" type="button" class="secondary-button">Salvar nome</button>
+          </div>
+          <p id="workspace-description" class="panel-intro">
+            Cada casal usa um link próprio. Quem tiver esse link poderá editar o mesmo painel.
+          </p>
+        </div>
+
+        <div class="workspace-actions">
+          <label class="workspace-share-field">
+            Link compartilhável
+            <input id="share-link" type="text" readonly value="" />
+          </label>
+          <div class="workspace-buttons">
+            <button id="copy-share-link" type="button" class="primary-button">Copiar link</button>
+            <button id="create-new-workspace" type="button" class="ghost-button">Novo painel</button>
+          </div>
+        </div>
+      </section>
+
+      <main class="dashboard">
+        <section class="summary-grid" aria-label="Resumo geral">
+          <article class="metric-card">
+            <div class="metric-head">
+              <span class="metric-icon">Caixa</span>
+              <span class="metric-label">Ainda a pagar</span>
+            </div>
+            <strong id="metric-total" class="metric-value">0</strong>
+            <p class="metric-detail">Quanto ainda falta sair do caixa para quitar tudo.</p>
+          </article>
+
+          <article class="metric-card">
+            <div class="metric-head">
+              <span class="metric-icon">Pago</span>
+              <span class="metric-label">Pago até agora</span>
+            </div>
+            <strong id="metric-settled" class="metric-value">R$ 0,00</strong>
+            <p class="metric-detail">Quanto já foi efetivamente pago aos fornecedores.</p>
+          </article>
+
+          <article class="metric-card accent">
+            <div class="metric-head">
+              <span class="metric-icon">Líquido</span>
+              <span class="metric-label">Desembolso líquido</span>
+            </div>
+            <strong id="metric-net-outflow" class="metric-value">R$ 0,00</strong>
+            <p class="metric-detail">Quanto ainda deve sair do seu bolso após abater os valores a receber.</p>
+          </article>
+
+          <article class="metric-card">
+            <div class="metric-head">
+              <span class="metric-icon">Volta</span>
+              <span class="metric-label">A receber</span>
+            </div>
+            <strong id="metric-attention" class="metric-value">0</strong>
+            <p class="metric-detail">Valor que ainda precisa voltar para você via ressarcimento.</p>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">Cadastro rápido</p>
+                <h2>Registrar item</h2>
+              </div>
+              <button id="clear-form" type="button" class="ghost-button">Limpar</button>
+            </div>
+
+            <p class="panel-intro">
+              Registre o item por etapas e só complete os detalhes que fizerem sentido.
+            </p>
+
+            <form id="entry-form" class="entry-form">
+              <input id="entry-id" type="hidden" />
+
+              <section class="form-step-meta" aria-label="Progresso do formulário">
+                <div>
+                  <p id="step-title" class="form-step-title">Etapa 1 de 4</p>
+                  <p id="step-description" class="form-step-description">
+                    Comece pelo essencial.
+                  </p>
+                </div>
+                <div class="form-step-progress" aria-hidden="true">
+                  <span id="step-progress-bar" class="form-step-progress-bar"></span>
+                </div>
+              </section>
+
+              <section class="form-group" data-step="1">
+                <div class="form-group-heading">
+                  <h3>1. Item</h3>
+                  <p>Quem é o fornecedor ou qual é o gasto.</p>
+                </div>
+
+                <label>
+                  Item / fornecedor
+                  <input
+                    id="title"
+                    type="text"
+                    placeholder="Ex.: Buffet principal, vestido, celebrante"
+                    required
+                  />
+                  <span class="field-help">Nome do fornecedor ou do gasto.</span>
+                </label>
+
+                <div class="inline-fields">
+                  <label>
+                    Categoria
+                    <select id="category">
+                      <option value="">Outro</option>
+                      <option>Local</option>
+                      <option>Buffet</option>
+                      <option>Bebidas</option>
+                      <option>Confeitaria</option>
+                      <option>Decoração</option>
+                      <option>Foto e vídeo</option>
+                      <option>Música</option>
+                      <option>Cerimônia</option>
+                      <option>Trajes</option>
+                      <option>Beleza</option>
+                      <option>Papelaria</option>
+                      <option>Logística</option>
+                      <option>Lua de mel</option>
+                      <option>Financeiro</option>
+                      <option>Outro</option>
+                    </select>
+                    <span class="field-help">Para organizar melhor.</span>
+                  </label>
+
+                  <div class="responsible-field">
+                    <label>
+                      Responsável
+                      <div class="responsible-picker">
+                        <select id="person">
+                          <option value="Noivos" selected>Noivos</option>
+                        </select>
+                      </div>
+                      <span class="field-help">Quem paga ou acompanha esse item.</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="step-actions">
+                  <button type="button" class="primary-button step-next" data-next-step="2">Continuar</button>
+                </div>
+              </section>
+
+              <section class="form-group is-hidden" data-step="2">
+                <div class="form-group-heading">
+                  <h3>2. Pagamento</h3>
+                  <p>Quanto custa, quanto já foi pago e o que ainda vence.</p>
+                </div>
+
+                <div class="inline-fields">
+                  <label>
+                    Valor contratado
+                    <input
+                      id="contract-amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0,00"
+                      required
+                    />
+                    <span class="field-help">Valor total.</span>
+                  </label>
+
+                  <label>
+                    Valor pago até agora
+                    <input id="paid-amount" type="number" min="0" step="0.01" placeholder="0,00" />
+                    <span class="field-help">Quanto já foi pago.</span>
+                  </label>
+                </div>
+
+                <label>
+                  Valor que ainda falta pagar
+                  <input id="remaining-amount" type="text" value="R$ 0,00" readonly />
+                  <span class="field-help">Calculado automaticamente.</span>
+                </label>
+
+                <div class="inline-fields">
+                  <label>
+                    Status do pagamento
+                    <select id="payment-status" required>
+                      <option value="">Selecione</option>
+                      <option value="nao-pago">Não pago</option>
+                      <option value="sinal-pago">Sinal pago</option>
+                      <option value="entrada-paga">Entrada paga</option>
+                      <option value="pago-50">Pago 50%</option>
+                      <option value="pago-parcial">Pago parcial</option>
+                      <option value="pago-100">Pago completo (100%)</option>
+                    </select>
+                    <span class="field-help">Situação atual.</span>
+                  </label>
+
+                  <label>
+                    Próximo pagamento
+                    <input id="next-payment-amount" type="number" min="0" step="0.01" placeholder="0,00" />
+                    <span class="field-help">Próxima parcela.</span>
+                  </label>
+                </div>
+
+                <div class="inline-fields">
+                  <label>
+                    Data do primeiro pagamento
+                    <input id="first-payment-date" type="date" />
+                    <span class="field-help">Quando pagou pela primeira vez.</span>
+                  </label>
+
+                  <label>
+                    Vencimento do próximo pagamento
+                    <input id="next-payment-date" type="date" />
+                    <span class="field-help">Data do próximo vencimento.</span>
+                  </label>
+                </div>
+
+                <label class="toggle-field">
+                  <span>Terá ressarcimento?</span>
+                  <span class="toggle-control">
+                    <input id="is-reimbursable" type="checkbox" />
+                    <span class="toggle-switch" aria-hidden="true"></span>
+                    <span id="reimbursement-toggle-label" class="toggle-label">Não</span>
+                  </span>
+                </label>
+
+                <div class="step-actions">
+                  <button type="button" class="ghost-button step-prev" data-prev-step="1">Voltar</button>
+                  <button type="button" class="primary-button step-next" data-next-step="3">Continuar</button>
+                </div>
+              </section>
+
+              <section id="reimbursement-section" class="form-group is-hidden" data-step="3">
+                <div class="form-group-heading">
+                  <h3>3. Ressarcimento</h3>
+                  <p>Preencha só os detalhes do retorno desse valor.</p>
+                </div>
+
+                <div class="inline-fields">
+                  <div class="responsible-field">
+                    <label>
+                      Quem ressarce
+                      <div class="responsible-picker">
+                        <select id="reimbursement-person">
+                          <option value="Noivos" selected>Noivos</option>
+                        </select>
+                      </div>
+                      <span class="field-help">Quem devolve.</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="inline-fields">
+                  <label>
+                    Valor a ressarcir
+                    <input id="reimbursement-amount" type="number" min="0" step="0.01" placeholder="0,00" />
+                    <span class="field-help">Valor esperado.</span>
+                  </label>
+
+                  <label>
+                    Status do ressarcimento
+                    <select id="reimbursement-status">
+                      <option value="nao-se-aplica">Não se aplica</option>
+                      <option value="pendente">Pendente</option>
+                      <option value="parcial">Parcial</option>
+                      <option value="recebido">Recebido</option>
+                    </select>
+                    <span class="field-help">Como está esse retorno.</span>
+                  </label>
+                </div>
+
+                <label>
+                  Data prevista / recebida
+                  <input id="reimbursement-date" type="date" />
+                  <span class="field-help">Previsão ou data real.</span>
+                </label>
+
+                <div class="step-actions">
+                  <button type="button" class="ghost-button step-prev" data-prev-step="2">Voltar</button>
+                  <button type="button" class="primary-button step-next" data-next-step="4">Continuar</button>
+                </div>
+              </section>
+
+              <section class="form-group is-hidden" data-step="4">
+                <div class="form-group-heading">
+                  <h3>4. Observações</h3>
+                  <p>Use este espaço para registrar contexto, pendências e qualquer detalhe útil.</p>
+                </div>
+                <label>
+                  O que aconteceu / observações
+                  <textarea
+                    id="notes"
+                    rows="4"
+                    placeholder="Ex.: pago 50%, falta confirmar horário de montagem, contato respondeu no WhatsApp..."
+                  ></textarea>
+                </label>
+
+                <section class="task-editor">
+                  <div class="form-group-heading">
+                    <h3>Tarefas do item</h3>
+                    <p>Crie uma ou mais tarefas ligadas a este item.</p>
+                  </div>
+
+                  <div class="task-composer">
+                    <input
+                      id="task-input"
+                      type="text"
+                      placeholder="Ex.: confirmar horário, cobrar retorno, enviar comprovante"
+                    />
+                    <input id="task-date-input" type="date" />
+                    <button id="add-task" type="button" class="secondary-button">Adicionar tarefa</button>
+                  </div>
+
+                  <p id="task-summary" class="task-summary">Nenhuma tarefa criada por enquanto.</p>
+                  <div id="task-list-editor" class="task-list-editor"></div>
+                </section>
+
+                <div class="step-actions">
+                  <button type="button" class="ghost-button step-prev" data-prev-step="3">Voltar</button>
+                </div>
+              </section>
+
+              <div class="form-actions is-hidden" id="final-form-actions">
+                <button type="submit" class="primary-button">Salvar item</button>
+                <button id="load-sample" type="button" class="secondary-button">
+                  Carregar exemplo
+                </button>
+              </div>
+
+              <p id="save-status-inline" class="save-status-inline" aria-live="polite">
+                As alterações serão salvas no painel compartilhado.
+              </p>
+            </form>
+          </section>
+
+          <section class="panel list-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">Central de acompanhamento</p>
+                <h2>Visão dos itens</h2>
+                <p class="panel-intro list-intro">Priorize vencimentos, acompanhe ressarcimentos e revise os itens financeiros em uma área mais operacional.</p>
+              </div>
+            </div>
+
+            <div class="toolbar toolbar-shell">
+              <label class="toolbar-field">
+                Buscar
+                <input id="search" type="search" placeholder="Fornecedor, pessoa, ressarcimento..." />
+              </label>
+
+              <label class="toolbar-field">
+                Filtrar por pagamento
+                <select id="status-filter">
+                  <option value="todos">Todos</option>
+                  <option value="nao-pago">Não pago</option>
+                  <option value="sinal-pago">Sinal pago</option>
+                  <option value="entrada-paga">Entrada paga</option>
+                  <option value="pago-50">Pago 50%</option>
+                  <option value="pago-parcial">Pago parcial</option>
+                  <option value="pago-100">Pago completo (100%)</option>
+                </select>
+              </label>
+            </div>
+
+            <section class="panel-subsection global-tasks-panel" aria-labelledby="global-tasks-title">
+              <div class="attention-header">
+                <div>
+                  <p class="panel-kicker">Checklist geral</p>
+                  <h3 id="global-tasks-title">Tarefas da reta final</h3>
+                  <p class="attention-subtitle">Itens que precisam existir mesmo sem estarem ligados a um custo específico.</p>
+                </div>
+              </div>
+
+              <div class="task-composer">
+                <input
+                  id="global-task-input"
+                  type="text"
+                  placeholder="Ex.: revisar lista final, separar documentos, confirmar horários"
+                />
+                <input id="global-task-date-input" type="date" />
+                <button id="add-global-task" type="button" class="secondary-button">Adicionar tarefa</button>
+              </div>
+
+              <p id="global-task-summary" class="task-summary">Nenhuma tarefa geral criada por enquanto.</p>
+              <div id="global-task-list" class="task-list-editor global-task-list"></div>
+            </section>
+
+            <section class="attention-panel" aria-labelledby="attention-title">
+              <div class="attention-header">
+                <div>
+                  <p class="panel-kicker">Olhar rápido</p>
+                  <h3 id="attention-title">Pedem atenção agora</h3>
+                  <p class="attention-subtitle">Os itens mais próximos de vencer ou com retorno financeiro ainda pendente aparecem primeiro.</p>
+                </div>
+              </div>
+              <div id="attention-list" class="attention-list"></div>
+            </section>
+
+            <div id="entry-list" class="entry-list" aria-live="polite"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <template id="entry-template">
+      <article class="entry-card">
+        <div class="entry-top">
+          <div>
+            <p class="entry-category"></p>
+            <h3 class="entry-title"></h3>
+            <p class="entry-owner"></p>
+          </div>
+          <span class="status-pill"></span>
+        </div>
+
+        <div class="entry-summary">
+          <div class="entry-summary-item">
+            <span class="entry-summary-label">Contratado</span>
+            <strong class="entry-summary-value summary-contract"></strong>
+          </div>
+          <div class="entry-summary-item">
+            <span class="entry-summary-label">Pago</span>
+            <strong class="entry-summary-value summary-paid"></strong>
+          </div>
+          <div class="entry-summary-item">
+            <span class="entry-summary-label">Falta</span>
+            <strong class="entry-summary-value summary-remaining"></strong>
+          </div>
+        </div>
+
+        <div class="entry-meta-grid">
+          <div class="entry-meta-group">
+            <span class="entry-meta-group-label">Pagamento</span>
+            <div class="entry-meta">
+              <span class="meta-first-payment"></span>
+              <span class="meta-contract"></span>
+              <span class="meta-paid"></span>
+              <span class="meta-next-payment"></span>
+              <span class="meta-date"></span>
+            </div>
+          </div>
+
+          <div class="entry-meta-group">
+            <span class="entry-meta-group-label">Ressarcimento</span>
+            <div class="entry-meta">
+              <span class="meta-reimbursement"></span>
+            </div>
+          </div>
+        </div>
+
+        <p class="entry-notes"></p>
+        <section class="entry-tasks">
+          <div class="entry-tasks-header">
+            <strong>Tarefas</strong>
+            <span class="entry-task-count"></span>
+          </div>
+          <div class="entry-task-list"></div>
+        </section>
+
+        <div class="entry-actions">
+          <button type="button" class="text-button edit-button">Editar</button>
+          <button type="button" class="text-button danger delete-button">Excluir</button>
+        </div>
+      </article>
+    </template>
+
+    <div id="person-modal" class="modal-backdrop is-hidden" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="person-modal-title">
+        <div class="modal-header">
+          <div>
+            <p class="panel-kicker">Novo responsável</p>
+            <h3 id="person-modal-title">Adicionar pessoa</h3>
+          </div>
+          <button id="close-person-modal" type="button" class="ghost-button icon-button">Fechar</button>
+        </div>
+
+        <label>
+          Nome
+          <input id="custom-person" type="text" placeholder="Ex.: mãe do noivo, cerimonialista" />
+        </label>
+
+        <div class="modal-actions">
+          <button id="cancel-person-modal" type="button" class="ghost-button">Cancelar</button>
+          <button id="add-person" type="button" class="primary-button">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="task-modal" class="modal-backdrop is-hidden" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <div class="modal-header">
+          <div>
+            <p class="panel-kicker">Editar tarefa</p>
+            <h3 id="task-modal-title">Ajustar tarefa</h3>
+          </div>
+          <button id="close-task-modal" type="button" class="ghost-button icon-button">Fechar</button>
+        </div>
+
+        <label>
+          Tarefa
+          <input id="task-modal-title-input" type="text" placeholder="Título da tarefa" />
+        </label>
+
+        <label>
+          Data
+          <input id="task-modal-date-input" type="date" />
+        </label>
+
+        <div class="modal-actions">
+          <button id="cancel-task-modal" type="button" class="ghost-button">Cancelar</button>
+          <button id="save-task-modal" type="button" class="primary-button">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
