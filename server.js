@@ -17,7 +17,6 @@ const FIXED_WEDDING_WORKSPACE_SLUG = "casamento-principal";
 const PUBLIC_FILES = {
   "/app.js": { file: path.join(ROOT_DIR, "app.js"), type: "application/javascript; charset=utf-8" },
   "/styles.css": { file: path.join(ROOT_DIR, "styles.css"), type: "text/css; charset=utf-8" },
-  "/boris-noiva-header-v2.png": { file: path.join(ROOT_DIR, "boris-noiva-header-v2.png"), type: "image/png" },
 };
 
 let storeWriteQueue = Promise.resolve();
