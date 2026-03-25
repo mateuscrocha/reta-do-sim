@@ -180,11 +180,11 @@ textarea:focus-visible {
   position: relative;
   z-index: 1;
   display: block;
-  width: min(100%, 220px);
+  width: min(100%, 232px);
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 22px 24px rgba(23, 59, 73, 0.12));
-  transform: translateY(16px);
+  filter: drop-shadow(0 10px 14px rgba(23, 59, 73, 0.08));
+  transform: translateY(10px);
 }
 
 .eyebrow,
@@ -1426,8 +1426,8 @@ textarea {
   }
 
   .topbar-mascot img {
-    width: min(100%, 184px);
-    transform: translateY(10px);
+    width: min(100%, 194px);
+    transform: translateY(6px);
   }
 
   input,
