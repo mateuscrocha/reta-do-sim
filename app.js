@@ -354,6 +354,11 @@ async function bootstrapWorkspace() {
     setSyncStatus("Painel compartilhado pronto.");
   } catch (error) {
     console.error(error);
+    if (slugFromPath === "casamento-principal") {
+      setSyncStatus("O painel fixo do casamento ainda não foi preparado no servidor.");
+      return;
+    }
+
     setSyncStatus("Não foi possível abrir este painel. Criando um novo...");
     await createWorkspaceAndRedirect();
   }

@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package.json ./
 COPY index.html app.js styles.css server.js ./
+COPY data ./data
 
 RUN mkdir -p /app/storage
 
