@@ -329,7 +329,7 @@ function bindEvents() {
 
 async function bootstrapWorkspace() {
   setSyncStatus("Preparando espaço compartilhado...");
-  if (window.location.pathname === "/casamento") {
+  if (window.location.pathname === "/" || window.location.pathname === "/casamento") {
     window.location.replace("/c/casamento-principal");
     return;
   }
@@ -338,11 +338,6 @@ async function bootstrapWorkspace() {
   const rememberedSlug = readRememberedWorkspaceSlug();
 
   if (!slugFromPath) {
-    if (rememberedSlug) {
-      window.location.replace(`/c/${rememberedSlug}`);
-      return;
-    }
-
     await bootstrapDefaultWorkspace();
     return;
   }

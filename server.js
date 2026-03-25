@@ -136,7 +136,7 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (request.method === "GET" && pathname === FIXED_WEDDING_SHORT_PATH) {
+  if (request.method === "GET" && (pathname === "/" || pathname === FIXED_WEDDING_SHORT_PATH)) {
     response.writeHead(302, {
       Location: `/c/${FIXED_WEDDING_WORKSPACE_SLUG}`,
       "Cache-Control": "no-cache",
@@ -145,7 +145,7 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (request.method === "GET" && (pathname === "/" || /^\/c\/[a-z0-9-]+$/i.test(pathname))) {
+  if (request.method === "GET" && /^\/c\/[a-z0-9-]+$/i.test(pathname)) {
     await sendFile(response, path.join(ROOT_DIR, "index.html"), "text/html; charset=utf-8");
     return;
   }
