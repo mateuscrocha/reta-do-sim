@@ -329,6 +329,11 @@ function bindEvents() {
 
 async function bootstrapWorkspace() {
   setSyncStatus("Preparando espaço compartilhado...");
+  if (window.location.pathname === "/casamento") {
+    window.location.replace("/c/casamento-principal");
+    return;
+  }
+
   const slugFromPath = getWorkspaceSlugFromPath();
   const rememberedSlug = readRememberedWorkspaceSlug();
 

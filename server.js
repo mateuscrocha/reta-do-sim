@@ -12,6 +12,8 @@ const STORAGE_FILE = process.env.DATA_FILE
   ? path.resolve(process.env.DATA_FILE)
   : path.join(STORAGE_DIR, "workspaces.json");
 const LEGACY_IMPORT_FILE = path.join(ROOT_DIR, "data", "fechamento-casamento-recuperado.json");
+const FIXED_WEDDING_WORKSPACE_SLUG = "casamento-principal";
+const FIXED_WEDDING_SHORT_PATH = "/casamento";
 
 const PUBLIC_FILES = {
   "/app.js": { file: path.join(ROOT_DIR, "app.js"), type: "application/javascript; charset=utf-8" },
@@ -53,6 +55,11 @@ async function handleRequest(request, response) {
 
   if (pathname === "/api/bootstrap" && request.method === "GET") {
     const workspace = await updateStore((store) => {
+      const fixedWorkspace = store.workspaces[FIXED_WEDDING_WORKSPACE_SLUG];
+      if (fixedWorkspace) {
+        return fixedWorkspace;
+      }
+
       const existingWorkspaces = Object.values(store.workspaces);
 
       if (existingWorkspaces.length > 0) {
@@ -129,6 +136,15 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === "GET" && pathname === FIXED_WEDDING_SHORT_PATH) {
+    response.writeHead(302, {
+      Location: `/c/${FIXED_WEDDING_WORKSPACE_SLUG}`,
+      "Cache-Control": "no-cache",
+    });
+    response.end();
+    return;
+  }
+
   if (request.method === "GET" && (pathname === "/" || /^\/c\/[a-z0-9-]+$/i.test(pathname))) {
     await sendFile(response, path.join(ROOT_DIR, "index.html"), "text/html; charset=utf-8");
     return;
@@ -187,7 +203,17 @@ function updateStore(mutator) {
 
 async function importLegacyDataIfNeeded() {
   const store = await readStore();
-  if (Object.keys(store.workspaces).length > 0) {
+  const hasFixedWorkspace = Boolean(store.workspaces[FIXED_WEDDING_WORKSPACE_SLUG]);
+  const legacyImportedWorkspace = store.workspaces["casamento-importado"];
+
+  if (legacyImportedWorkspace && !hasFixedWorkspace) {
+    store.workspaces[FIXED_WEDDING_WORKSPACE_SLUG] = {
+      ...legacyImportedWorkspace,
+      slug: FIXED_WEDDING_WORKSPACE_SLUG,
+      name: legacyImportedWorkspace.name || "Meu casamento",
+    };
+    delete store.workspaces["casamento-importado"];
+    await writeStore(store);
     return;
   }
 
@@ -196,8 +222,8 @@ async function importLegacyDataIfNeeded() {
     const legacyPayload = JSON.parse(rawLegacy);
     const now = legacyPayload.updatedAt || new Date().toISOString();
     const workspace = {
-      slug: "casamento-importado",
-      name: "Casamento importado",
+      slug: FIXED_WEDDING_WORKSPACE_SLUG,
+      name: "Meu casamento",
       entries: normalizeEntries(legacyPayload.entries),
       generalTasks: extractLegacyGeneralTasks(legacyPayload.entries),
       createdAt: now,
@@ -205,6 +231,10 @@ async function importLegacyDataIfNeeded() {
     };
 
     if (workspace.entries.length === 0 && workspace.generalTasks.length === 0) {
+      return;
+    }
+
+    if (hasFixedWorkspace) {
       return;
     }
 
