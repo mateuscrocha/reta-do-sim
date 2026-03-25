@@ -11,6 +11,7 @@ const STORAGE_DIR = process.env.DATA_DIR
 const STORAGE_FILE = process.env.DATA_FILE
   ? path.resolve(process.env.DATA_FILE)
   : path.join(STORAGE_DIR, "workspaces.json");
+const LEGACY_IMPORT_FILE = path.join(ROOT_DIR, "data", "fechamento-casamento-recuperado.json");
 
 const PUBLIC_FILES = {
   "/app.js": { file: path.join(ROOT_DIR, "app.js"), type: "application/javascript; charset=utf-8" },
@@ -47,6 +48,23 @@ async function handleRequest(request, response) {
 
   if (pathname === "/api/health" && request.method === "GET") {
     sendJson(response, 200, { ok: true });
+    return;
+  }
+
+  if (pathname === "/api/bootstrap" && request.method === "GET") {
+    const workspace = await updateStore((store) => {
+      const existingWorkspaces = Object.values(store.workspaces);
+
+      if (existingWorkspaces.length > 0) {
+        return getMostRecentWorkspace(existingWorkspaces);
+      }
+
+      const nextWorkspace = buildWorkspace();
+      store.workspaces[nextWorkspace.slug] = nextWorkspace;
+      return nextWorkspace;
+    });
+
+    sendJson(response, 200, { workspace });
     return;
   }
 
@@ -141,6 +159,8 @@ async function ensureStorage() {
   } catch {
     await writeStore({ workspaces: {} });
   }
+
+  await importLegacyDataIfNeeded();
 }
 
 async function readStore() {
@@ -163,6 +183,40 @@ function updateStore(mutator) {
 
   storeWriteQueue = nextOperation.catch(() => {});
   return nextOperation;
+}
+
+async function importLegacyDataIfNeeded() {
+  const store = await readStore();
+  if (Object.keys(store.workspaces).length > 0) {
+    return;
+  }
+
+  try {
+    const rawLegacy = await fs.readFile(LEGACY_IMPORT_FILE, "utf8");
+    const legacyPayload = JSON.parse(rawLegacy);
+    const now = legacyPayload.updatedAt || new Date().toISOString();
+    const workspace = {
+      slug: "casamento-importado",
+      name: "Casamento importado",
+      entries: normalizeEntries(legacyPayload.entries),
+      generalTasks: extractLegacyGeneralTasks(legacyPayload.entries),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (workspace.entries.length === 0 && workspace.generalTasks.length === 0) {
+      return;
+    }
+
+    store.workspaces[workspace.slug] = workspace;
+    await writeStore(store);
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return;
+    }
+
+    throw error;
+  }
 }
 
 async function readJsonBody(request) {
@@ -201,6 +255,15 @@ function sanitizeWorkspaceName(value) {
   return value.trim().slice(0, 120);
 }
 
+function extractLegacyGeneralTasks(entries) {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  const metaEntry = entries.find((entry) => entry && entry.id === "__general_tasks__");
+  return normalizeTasks(metaEntry?.tasks);
+}
+
 function normalizeEntries(entries) {
   if (!Array.isArray(entries)) {
     return [];
@@ -208,6 +271,7 @@ function normalizeEntries(entries) {
 
   return entries
     .filter((entry) => entry && typeof entry === "object" && typeof entry.title === "string")
+    .filter((entry) => entry.id !== "__general_tasks__")
     .map((entry) => ({
       id: String(entry.id || crypto.randomUUID()),
       category: String(entry.category || "Outro"),
@@ -251,4 +315,12 @@ function normalizeTasks(tasks) {
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getMostRecentWorkspace(workspaces) {
+  return [...workspaces].sort((left, right) => {
+    const leftTime = new Date(left.updatedAt || left.createdAt || 0).getTime();
+    const rightTime = new Date(right.updatedAt || right.createdAt || 0).getTime();
+    return rightTime - leftTime;
+  })[0];
 }

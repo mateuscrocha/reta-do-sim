@@ -299,7 +299,7 @@ async function bootstrapWorkspace() {
       return;
     }
 
-    await createWorkspaceAndRedirect();
+    await bootstrapDefaultWorkspace();
     return;
   }
 
@@ -318,6 +318,12 @@ async function bootstrapWorkspace() {
     setSyncStatus("Não foi possível abrir este painel. Criando um novo...");
     await createWorkspaceAndRedirect();
   }
+}
+
+async function bootstrapDefaultWorkspace() {
+  const response = await fetchJson(`${API_BASE}/bootstrap`);
+  rememberWorkspaceSlug(response.workspace.slug);
+  window.location.replace(`/c/${response.workspace.slug}`);
 }
 
 function hydrateWorkspace(workspace) {
