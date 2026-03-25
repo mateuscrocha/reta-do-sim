@@ -59,7 +59,77 @@
         </div>
       </section>
 
-      <main class="dashboard">
+      <section id="onboarding-panel" class="onboarding-panel is-hidden" aria-label="Comece por aqui">
+        <div class="onboarding-hero">
+          <div class="onboarding-copy">
+            <p class="panel-kicker">Comece por aqui</p>
+            <h2>Organize o casamento sem precisar entender o painel inteiro de uma vez.</h2>
+            <p class="panel-intro">
+              Primeiro vocês cadastram os gastos principais. Depois a plataforma mostra vencimentos,
+              reembolsos e o que falta resolver.
+            </p>
+          </div>
+          <div class="onboarding-actions">
+            <button id="start-onboarding" type="button" class="primary-button">Começar cadastro inicial</button>
+            <button id="skip-onboarding" type="button" class="ghost-button">Entrar no painel</button>
+          </div>
+        </div>
+
+        <div class="onboarding-grid">
+          <article class="onboarding-card">
+            <span class="onboarding-step">1</span>
+            <h3>Dê nome ao casal e compartilhe o link</h3>
+            <p>Esse painel é colaborativo. Quem tiver o link consegue atualizar tudo junto com vocês.</p>
+          </article>
+
+          <article class="onboarding-card">
+            <span class="onboarding-step">2</span>
+            <h3>Cadastrem os primeiros fornecedores</h3>
+            <p>Comecem pelos itens maiores, como buffet, decoração, foto, trajes ou cerimônia.</p>
+          </article>
+
+          <article class="onboarding-card">
+            <span class="onboarding-step">3</span>
+            <h3>Acompanhem só o que pede ação</h3>
+            <p>Depois disso, o painel destaca o que vence, o que falta pagar e o que precisa voltar para vocês.</p>
+          </article>
+        </div>
+
+        <section class="onboarding-quickstart" aria-labelledby="quickstart-title">
+          <div>
+            <p class="panel-kicker">Atalhos úteis</p>
+            <h3 id="quickstart-title">Quer começar mais rápido?</h3>
+            <p class="panel-intro">Escolha um modelo e eu já preparo o formulário com um item comum da reta final.</p>
+          </div>
+
+          <div class="quickstart-buttons">
+            <button type="button" class="secondary-button quickstart-button" data-quick-template="buffet">
+              Começar com buffet
+            </button>
+            <button type="button" class="secondary-button quickstart-button" data-quick-template="foto">
+              Começar com foto e vídeo
+            </button>
+            <button type="button" class="secondary-button quickstart-button" data-quick-template="decoracao">
+              Começar com decoração
+            </button>
+          </div>
+        </section>
+      </section>
+
+      <main id="dashboard-shell" class="dashboard">
+        <section id="guidance-strip" class="guidance-strip">
+          <div class="guidance-copy">
+            <p class="panel-kicker">Próximos passos</p>
+            <h2 id="guidance-title">Vamos montar a base do painel.</h2>
+            <p id="guidance-body" class="panel-intro">
+              Cadastre os primeiros itens para o painel começar a mostrar prioridades reais.
+            </p>
+          </div>
+          <div class="guidance-actions">
+            <button id="guidance-primary" type="button" class="primary-button">Adicionar primeiro item</button>
+            <button id="guidance-secondary" type="button" class="ghost-button">Ir para checklist geral</button>
+          </div>
+        </section>
         <section class="summary-grid" aria-label="Resumo geral">
           <article class="metric-card">
             <div class="metric-head">
@@ -99,7 +169,7 @@
         </section>
 
         <section class="content-grid">
-          <section class="panel form-panel">
+          <section id="item-form-panel" class="panel form-panel">
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">Cadastro rápido</p>
@@ -402,7 +472,7 @@
               </label>
             </div>
 
-            <section class="panel-subsection global-tasks-panel" aria-labelledby="global-tasks-title">
+            <section id="global-tasks-panel" class="panel-subsection global-tasks-panel" aria-labelledby="global-tasks-title">
               <div class="attention-header">
                 <div>
                   <p class="panel-kicker">Checklist geral</p>

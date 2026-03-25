@@ -1,7 +1,25 @@
 const GENERAL_TASKS_ENTRY_ID = "__general_tasks__";
 const LAST_WORKSPACE_KEY = "fechamento-casamento-last-workspace";
+const ONBOARDING_DISMISSED_PREFIX = "fechamento-casamento-onboarding-dismissed:";
 const ADD_PERSON_OPTION_VALUE = "__add_person__";
 const API_BASE = "/api";
+const quickStartTemplates = {
+  buffet: {
+    title: "Buffet principal",
+    category: "Buffet",
+    notes: "Comece registrando o valor total, o que já foi pago e a próxima parcela.",
+  },
+  foto: {
+    title: "Foto e vídeo",
+    category: "Foto e vídeo",
+    notes: "Use este cadastro para acompanhar sinal, saldo e entregas combinadas.",
+  },
+  decoracao: {
+    title: "Decoração",
+    category: "Decoração",
+    notes: "Vale registrar montagem, flores, mobiliário e qualquer pendência de confirmação.",
+  },
+};
 
 const sampleEntries = [
   {
@@ -81,6 +99,7 @@ const state = {
   saveTimer: null,
   saveRequestId: 0,
   lastQueuedMessage: "",
+  onboardingDismissed: false,
 };
 
 const defaultPeople = ["Noivos"];
@@ -93,6 +112,17 @@ const stepContent = {
 };
 
 const elements = {
+  dashboardShell: document.querySelector("#dashboard-shell"),
+  onboardingPanel: document.querySelector("#onboarding-panel"),
+  startOnboarding: document.querySelector("#start-onboarding"),
+  skipOnboarding: document.querySelector("#skip-onboarding"),
+  quickstartButtons: [...document.querySelectorAll(".quickstart-button")],
+  guidanceTitle: document.querySelector("#guidance-title"),
+  guidanceBody: document.querySelector("#guidance-body"),
+  guidancePrimary: document.querySelector("#guidance-primary"),
+  guidanceSecondary: document.querySelector("#guidance-secondary"),
+  itemFormPanel: document.querySelector("#item-form-panel"),
+  globalTasksPanel: document.querySelector("#global-tasks-panel"),
   form: document.querySelector("#entry-form"),
   entryId: document.querySelector("#entry-id"),
   category: document.querySelector("#category"),
@@ -188,6 +218,15 @@ function bindEvents() {
   elements.saveTaskModal.addEventListener("click", saveTaskModalChanges);
   elements.copyShareLink.addEventListener("click", copyShareLink);
   elements.createNewWorkspace.addEventListener("click", handleCreateNewWorkspace);
+  elements.startOnboarding.addEventListener("click", startOnboardingFlow);
+  elements.skipOnboarding.addEventListener("click", skipOnboardingFlow);
+  elements.quickstartButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      applyQuickStartTemplate(button.dataset.quickTemplate);
+    });
+  });
+  elements.guidancePrimary.addEventListener("click", handleGuidancePrimaryAction);
+  elements.guidanceSecondary.addEventListener("click", handleGuidanceSecondaryAction);
   elements.saveWorkspaceName.addEventListener("click", handleWorkspaceNameSave);
   elements.workspaceNameInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -331,6 +370,7 @@ function hydrateWorkspace(workspace) {
   state.workspaceName = workspace.name || buildWorkspaceName(workspace.slug);
   state.shareUrl = `${window.location.origin}/c/${workspace.slug}`;
   state.lastSavedAt = workspace.updatedAt || new Date().toISOString();
+  state.onboardingDismissed = readOnboardingDismissed(state.workspaceSlug);
   hydrateFromPayload(workspace);
 }
 
@@ -354,6 +394,56 @@ function handleWorkspaceNameSave() {
   state.workspaceName = nextName;
   updateWorkspaceUI();
   markMemoryChanges("Nome do casal salvo.");
+}
+
+function startOnboardingFlow() {
+  dismissOnboarding();
+  setCurrentStep(1);
+  focusForm();
+}
+
+function skipOnboardingFlow() {
+  dismissOnboarding();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function applyQuickStartTemplate(templateKey) {
+  const template = quickStartTemplates[templateKey];
+
+  if (!template) {
+    return;
+  }
+
+  dismissOnboarding();
+  resetForm();
+  elements.title.value = template.title;
+  elements.category.value = template.category;
+  elements.notes.value = template.notes;
+  updateFormState();
+  setCurrentStep(1);
+  focusForm();
+}
+
+function dismissOnboarding() {
+  state.onboardingDismissed = true;
+  rememberOnboardingDismissed(state.workspaceSlug);
+  renderExperience();
+}
+
+function handleGuidancePrimaryAction() {
+  setCurrentStep(1);
+  focusForm();
+}
+
+function handleGuidanceSecondaryAction() {
+  elements.globalTasksPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function focusForm() {
+  elements.itemFormPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => {
+    elements.title.focus();
+  }, 200);
 }
 
 async function createWorkspaceAndRedirect() {
@@ -410,6 +500,31 @@ function readRememberedWorkspaceSlug() {
   } catch (error) {
     console.error(error);
     return "";
+  }
+}
+
+function rememberOnboardingDismissed(slug) {
+  if (!slug) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(`${ONBOARDING_DISMISSED_PREFIX}${slug}`, "1");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function readOnboardingDismissed(slug) {
+  if (!slug) {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(`${ONBOARDING_DISMISSED_PREFIX}${slug}`) === "1";
+  } catch (error) {
+    console.error(error);
+    return false;
   }
 }
 
@@ -481,6 +596,7 @@ function loadSampleData() {
     return;
   }
 
+  dismissOnboarding();
   state.entries = structuredClone(sampleEntries);
   render();
   renderPersonOptions();
@@ -502,10 +618,49 @@ function hydrateFromPayload(payload) {
 }
 
 function render() {
+  renderExperience();
   renderMetrics();
   renderGlobalTasks();
   renderAttention();
   renderEntries();
+}
+
+function renderExperience() {
+  const showOnboarding = shouldShowOnboarding();
+  elements.onboardingPanel.classList.toggle("is-hidden", !showOnboarding);
+  elements.dashboardShell.classList.toggle("is-hidden", showOnboarding);
+  renderGuidanceStrip();
+}
+
+function renderGuidanceStrip() {
+  if (!hasOperationalData()) {
+    elements.guidanceTitle.textContent = "Vamos montar a base do painel.";
+    elements.guidanceBody.textContent =
+      "Cadastre os primeiros fornecedores para o painel começar a mostrar prioridades, vencimentos e valores em aberto.";
+    elements.guidancePrimary.textContent = "Adicionar primeiro item";
+    elements.guidanceSecondary.textContent = "Ir para checklist geral";
+    return;
+  }
+
+  const pendingPayments = state.entries.filter((entry) => entry.paymentStatus !== "pago-100").length;
+  const openReimbursements = state.entries.filter(
+    (entry) => entry.isReimbursable === "sim" && entry.reimbursementStatus !== "recebido"
+  ).length;
+  const pendingTasks = state.generalTasks.filter((task) => !task.done).length;
+
+  elements.guidanceTitle.textContent = "Seu painel já está andando.";
+  elements.guidanceBody.textContent =
+    `${pendingPayments} item(ns) com pagamento em aberto, ${openReimbursements} ressarcimento(s) pendente(s) e ${pendingTasks} tarefa(s) geral(is) para acompanhar.`;
+  elements.guidancePrimary.textContent = "Adicionar novo item";
+  elements.guidanceSecondary.textContent = "Ver checklist geral";
+}
+
+function shouldShowOnboarding() {
+  return !hasOperationalData() && !state.onboardingDismissed;
+}
+
+function hasOperationalData() {
+  return state.entries.length > 0 || state.generalTasks.length > 0;
 }
 
 function getVisibleEntries(entries) {
@@ -627,7 +782,7 @@ function renderEntries() {
 
   if (filteredEntries.length === 0) {
     elements.entryList.innerHTML =
-      '<div class="empty-state">Nenhum item encontrado. Comece cadastrando um fornecedor, despesa ou pendência.</div>';
+      '<div class="empty-state"><strong>Nenhum item apareceu com esse filtro.</strong><span>Ajuste a busca ou cadastre um fornecedor para o painel começar a ganhar contexto.</span></div>';
     return;
   }
 
@@ -857,7 +1012,8 @@ function renderGlobalTasks() {
   }
 
   if (state.generalTasks.length === 0) {
-    elements.globalTaskSummary.textContent = "Nenhuma tarefa geral criada por enquanto.";
+    elements.globalTaskSummary.textContent =
+      "Ainda não existe checklist geral. Use este bloco para pendências que não pertencem a um fornecedor específico.";
     return;
   }
 
@@ -1339,7 +1495,7 @@ function renderAttention() {
 
   if (attentionEntries.length === 0) {
     elements.attentionList.innerHTML =
-      '<div class="empty-state">Nada urgente por aqui. Os itens em atenção vão aparecer neste bloco automaticamente.</div>';
+      '<div class="empty-state"><strong>Nada urgente por aqui.</strong><span>Quando existir pagamento próximo, atraso ou ressarcimento pendente, o sistema vai destacar aqui automaticamente.</span></div>';
     return;
   }
 
