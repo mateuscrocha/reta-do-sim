@@ -17,6 +17,7 @@ const FIXED_WEDDING_WORKSPACE_SLUG = "casamento-principal";
 const PUBLIC_FILES = {
   "/app.js": { file: path.join(ROOT_DIR, "app.js"), type: "application/javascript; charset=utf-8" },
   "/styles.css": { file: path.join(ROOT_DIR, "styles.css"), type: "text/css; charset=utf-8" },
+  "/boris-noiva-header.png": { file: path.join(ROOT_DIR, "boris-noiva-header.png"), type: "image/png" },
 };
 
 let storeWriteQueue = Promise.resolve();
@@ -52,13 +53,29 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (pathname === "/api/workspaces" && request.method === "POST") {
+    const workspace = await updateStore((nextStore) => {
+      const now = new Date().toISOString();
+      const slug = generateWorkspaceSlug(nextStore.workspaces);
+      const newWorkspace = {
+        slug,
+        name: buildWorkspaceName(slug),
+        entries: [],
+        generalTasks: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+      nextStore.workspaces[slug] = newWorkspace;
+      return newWorkspace;
+    });
+
+    sendJson(response, 201, { workspace });
+    return;
+  }
+
   const workspaceMatch = pathname.match(/^\/api\/workspaces\/([a-z0-9-]+)$/i);
   if (workspaceMatch) {
     const slug = workspaceMatch[1];
-    if (slug !== FIXED_WEDDING_WORKSPACE_SLUG) {
-      sendJson(response, 404, { error: "workspace_not_found" });
-      return;
-    }
 
     const store = await readStore();
     const workspace = store.workspaces[slug];
@@ -108,7 +125,17 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (request.method === "GET" && pathname === `/c/${FIXED_WEDDING_WORKSPACE_SLUG}`) {
+  if (request.method === "GET" && pathname === "/casamento") {
+    sendRedirect(response, `/c/${FIXED_WEDDING_WORKSPACE_SLUG}`);
+    return;
+  }
+
+  if (request.method === "GET" && pathname === "/") {
+    await sendFile(response, path.join(ROOT_DIR, "index.html"), "text/html; charset=utf-8");
+    return;
+  }
+
+  if (request.method === "GET" && /^\/c\/([a-z0-9-]+)$/i.test(pathname)) {
     await sendFile(response, path.join(ROOT_DIR, "index.html"), "text/html; charset=utf-8");
     return;
   }
@@ -226,6 +253,14 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function sendRedirect(response, location) {
+  response.writeHead(302, {
+    Location: location,
+    "Cache-Control": "no-cache",
+  });
+  response.end();
+}
+
 function sanitizeWorkspaceName(value) {
   if (typeof value !== "string") {
     return "";
@@ -294,4 +329,17 @@ function normalizeTasks(tasks) {
 function numberOrZero(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildWorkspaceName(slug) {
+  return `Painel do casal ${slug.slice(0, 6).toUpperCase()}`;
+}
+
+function generateWorkspaceSlug(workspaces) {
+  do {
+    const slug = crypto.randomBytes(4).toString("hex");
+    if (!workspaces[slug] && slug !== FIXED_WEDDING_WORKSPACE_SLUG) {
+      return slug;
+    }
+  } while (true);
 }
