@@ -101,6 +101,8 @@ const state = {
   saveRequestId: 0,
   lastQueuedMessage: "",
   onboardingDismissed: false,
+  paymentStatusManuallyEdited: false,
+  syncingPaymentStatus: false,
 };
 
 const defaultPeople = ["Noivos"];
@@ -300,10 +302,12 @@ function bindEvents() {
     elements.paidAmount,
     elements.reimbursementAmount,
     elements.reimbursementStatus,
-    elements.paymentStatus,
   ].forEach((element) => {
     element.addEventListener("input", updateFormPreview);
     element.addEventListener("change", updateFormPreview);
+  });
+  ["input", "change"].forEach((eventName) => {
+    elements.paymentStatus.addEventListener(eventName, handlePaymentStatusManualChange);
   });
   [
     elements.isReimbursable,
@@ -616,6 +620,7 @@ function resetForm() {
   elements.taskDateInput.value = "";
   elements.globalTaskDateInput.value = "";
   state.currentTasks = [];
+  resetPaymentStatusSyncState();
   renderPersonOptions();
   renderTaskEditor();
   closePersonModal();
@@ -911,6 +916,7 @@ function populateForm(entry) {
   elements.reimbursementDate.value = entry.reimbursementDate || "";
   elements.notes.value = entry.notes;
   state.currentTasks = normalizeTasks(entry.tasks || []);
+  resetPaymentStatusSyncState();
   renderTaskEditor();
   updateFormState();
   setCurrentStep(1);
@@ -972,19 +978,20 @@ async function persistWorkspace(successMessage = "") {
 
 function renderTaskEditor() {
   elements.taskListEditor.innerHTML = "";
+  const tasks = sortTasksByCompletion(state.currentTasks);
 
-  if (state.currentTasks.length === 0) {
+  if (tasks.length === 0) {
     elements.taskSummary.textContent = "Nenhuma tarefa criada por enquanto.";
     return;
   }
 
-  const pendingCount = state.currentTasks.filter((task) => !task.done).length;
+  const pendingCount = tasks.filter((task) => !task.done).length;
   elements.taskSummary.textContent =
     pendingCount === 0
-      ? `${state.currentTasks.length} tarefa(s), todas concluídas.`
-      : `${pendingCount} pendente(s) de ${state.currentTasks.length} tarefa(s).`;
+      ? `${tasks.length} tarefa(s), todas concluídas.`
+      : `${pendingCount} pendente(s) de ${tasks.length} tarefa(s).`;
 
-  state.currentTasks.forEach((task) => {
+  tasks.forEach((task) => {
     const row = document.createElement("div");
     const checkbox = document.createElement("input");
     const content = document.createElement("div");
@@ -1043,17 +1050,19 @@ function renderGlobalTasks() {
     return;
   }
 
-  if (state.generalTasks.length === 0) {
+  const tasks = sortTasksByCompletion(state.generalTasks);
+
+  if (tasks.length === 0) {
     elements.globalTaskSummary.textContent =
       "Ainda não existe checklist geral. Use este bloco para pendências que não pertencem a um fornecedor específico.";
     return;
   }
 
-  const pendingCount = state.generalTasks.filter((task) => !task.done).length;
+  const pendingCount = tasks.filter((task) => !task.done).length;
   elements.globalTaskSummary.textContent =
-    pendingCount === 0 ? "Tudo concluído" : `${pendingCount} pendente(s) de ${state.generalTasks.length}`;
+    pendingCount === 0 ? "Tudo concluído" : `${pendingCount} pendente(s) de ${tasks.length}`;
 
-  state.generalTasks.forEach((task) => {
+  tasks.forEach((task) => {
     const row = document.createElement("div");
     const checkbox = document.createElement("input");
     const content = document.createElement("div");
@@ -1116,6 +1125,7 @@ function addTaskToCurrentEntry() {
     dueDate: elements.taskDateInput.value || "",
     createdAt: new Date().toISOString(),
   });
+  state.currentTasks = sortTasksByCompletion(state.currentTasks);
 
   elements.taskInput.value = "";
   elements.taskDateInput.value = "";
@@ -1136,6 +1146,7 @@ function addGlobalTask() {
     dueDate: elements.globalTaskDateInput.value || "",
     createdAt: new Date().toISOString(),
   });
+  state.generalTasks = sortTasksByCompletion(state.generalTasks);
 
   elements.globalTaskInput.value = "";
   elements.globalTaskDateInput.value = "";
@@ -1144,8 +1155,8 @@ function addGlobalTask() {
 }
 
 function toggleCurrentTask(taskId) {
-  state.currentTasks = state.currentTasks.map((task) =>
-    task.id === taskId ? { ...task, done: !task.done } : task
+  state.currentTasks = sortTasksByCompletion(
+    state.currentTasks.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task))
   );
   renderTaskEditor();
 }
@@ -1156,15 +1167,17 @@ function removeCurrentTask(taskId) {
 }
 
 function normalizeTasks(tasks = []) {
-  return tasks
-    .filter((task) => task && task.title)
-    .map((task) => ({
-      id: task.id || crypto.randomUUID(),
-      title: task.title.trim(),
-      done: Boolean(task.done),
-      dueDate: task.dueDate || "",
-      createdAt: task.createdAt || new Date().toISOString(),
-    }));
+  return sortTasksByCompletion(
+    tasks
+      .filter((task) => task && task.title)
+      .map((task) => ({
+        id: task.id || crypto.randomUUID(),
+        title: task.title.trim(),
+        done: Boolean(task.done),
+        dueDate: task.dueDate || "",
+        createdAt: task.createdAt || new Date().toISOString(),
+      }))
+  );
 }
 
 function renderEntryTasks(entry, container, listElement, countElement) {
@@ -1245,16 +1258,20 @@ function saveTaskModalChanges() {
   }
 
   if (state.taskModalContext.scope === "current") {
-    state.currentTasks = state.currentTasks.map((task) =>
-      task.id === state.taskModalContext.taskId ? { ...task, title, dueDate } : task
+    state.currentTasks = sortTasksByCompletion(
+      state.currentTasks.map((task) =>
+        task.id === state.taskModalContext.taskId ? { ...task, title, dueDate } : task
+      )
     );
     renderTaskEditor();
     closeTaskModal();
     return;
   }
 
-  state.generalTasks = state.generalTasks.map((task) =>
-    task.id === state.taskModalContext.taskId ? { ...task, title, dueDate } : task
+  state.generalTasks = sortTasksByCompletion(
+    state.generalTasks.map((task) =>
+      task.id === state.taskModalContext.taskId ? { ...task, title, dueDate } : task
+    )
   );
 
   render();
@@ -1270,8 +1287,10 @@ function toggleTaskOnEntry(entryId, taskId) {
 
     return {
       ...entry,
-      tasks: normalizeTasks(entry.tasks || []).map((task) =>
-        task.id === taskId ? { ...task, done: !task.done } : task
+      tasks: sortTasksByCompletion(
+        normalizeTasks(entry.tasks || []).map((task) =>
+          task.id === taskId ? { ...task, done: !task.done } : task
+        )
       ),
     };
   });
@@ -1281,8 +1300,8 @@ function toggleTaskOnEntry(entryId, taskId) {
 }
 
 function toggleGlobalTask(taskId) {
-  state.generalTasks = state.generalTasks.map((task) =>
-    task.id === taskId ? { ...task, done: !task.done } : task
+  state.generalTasks = sortTasksByCompletion(
+    state.generalTasks.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task))
   );
 
   render();
@@ -1429,34 +1448,107 @@ function updateFormPreview() {
 }
 
 function syncPaymentStatus(contractAmount, paidAmount) {
-  if (!contractAmount) {
-    elements.paymentStatus.value = paidAmount > 0 ? "pago-parcial" : "";
+  if (state.paymentStatusManuallyEdited) {
     return;
+  }
+
+  setPaymentStatusValue(getSuggestedPaymentStatus(contractAmount, paidAmount));
+}
+
+function getSuggestedPaymentStatus(contractAmount, paidAmount) {
+  if (!contractAmount) {
+    return paidAmount > 0 ? "pago-parcial" : "";
   }
 
   if (paidAmount <= 0) {
-    elements.paymentStatus.value = "nao-pago";
-    return;
+    return "nao-pago";
   }
 
   if (paidAmount >= contractAmount) {
-    elements.paymentStatus.value = "pago-100";
-    return;
+    return "pago-100";
   }
 
   const ratio = paidAmount / contractAmount;
 
   if (ratio === 0.5) {
-    elements.paymentStatus.value = "pago-50";
-    return;
+    return "pago-50";
   }
 
   if (ratio < 0.5) {
-    elements.paymentStatus.value = "sinal-pago";
-    return;
+    return "sinal-pago";
   }
 
-  elements.paymentStatus.value = "pago-parcial";
+  return "pago-parcial";
+}
+
+function setPaymentStatusValue(value) {
+  state.syncingPaymentStatus = true;
+  elements.paymentStatus.value = value;
+  state.syncingPaymentStatus = false;
+}
+
+function handlePaymentStatusManualChange() {
+  if (!state.syncingPaymentStatus) {
+    state.paymentStatusManuallyEdited = true;
+  }
+
+  updateFormPreview();
+}
+
+function resetPaymentStatusSyncState() {
+  state.paymentStatusManuallyEdited = false;
+  state.syncingPaymentStatus = false;
+}
+
+function sortTasksByCompletion(tasks = []) {
+  return tasks
+    .map((task, index) => ({ task, index }))
+    .sort((left, right) => {
+      const doneComparison = Number(left.task.done) - Number(right.task.done);
+
+      if (doneComparison !== 0) {
+        return doneComparison;
+      }
+
+      if (!left.task.done && !right.task.done) {
+        const leftPriority = getTaskDuePriority(left.task.dueDate);
+        const rightPriority = getTaskDuePriority(right.task.dueDate);
+
+        if (leftPriority.group !== rightPriority.group) {
+          return leftPriority.group - rightPriority.group;
+        }
+
+        if (leftPriority.sortKey !== rightPriority.sortKey) {
+          return leftPriority.sortKey.localeCompare(rightPriority.sortKey);
+        }
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ task }) => task);
+}
+
+function getTaskDuePriority(dueDate) {
+  if (!dueDate) {
+    return {
+      group: 2,
+      sortKey: "9999-12-31",
+    };
+  }
+
+  const daysUntil = getDaysUntil(dueDate);
+
+  if (daysUntil < 0) {
+    return {
+      group: 0,
+      sortKey: dueDate,
+    };
+  }
+
+  return {
+    group: 1,
+    sortKey: dueDate,
+  };
 }
 
 function setCurrentStep(step) {

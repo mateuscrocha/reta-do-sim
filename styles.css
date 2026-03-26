@@ -583,6 +583,11 @@ textarea:focus-visible {
   top: 20px;
   display: grid;
   gap: 18px;
+  align-self: start;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .form-panel::before,
@@ -1399,6 +1404,8 @@ textarea {
   .form-panel {
     position: relative;
     top: auto;
+    max-height: none;
+    overflow: visible;
   }
 }
 
