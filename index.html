@@ -7,34 +7,67 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <div class="topbar-main">
-          <div class="topbar-copy">
-            <div class="topbar-meta">
-              <p class="eyebrow">Planejamento do casamento</p>
-              <span class="topbar-status-label">Espaço compartilhado</span>
-            </div>
-            <h1 class="topbar-title">Reta do Sim</h1>
-            <p class="topbar-subtitle">Um painel acolhedor e inteligente para organizar custos, reembolsos e pendências da reta final com calma e clareza.</p>
-          </div>
-          <div class="topbar-status-card">
-            <span class="topbar-status-card-label">Status do painel</span>
-            <p id="sync-status" class="sync-status topbar-sync-status">Preparando painel...</p>
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Navegação principal">
+        <div class="sidebar-brand">
+          <span class="sidebar-brand-mark">R</span>
+          <div>
+            <strong>Reta do Sim</strong>
+            <span>Planejamento financeiro</span>
           </div>
         </div>
-      </header>
 
-      <section class="workspace-banner" aria-label="Painel compartilhável">
-        <div class="workspace-copy">
-          <p class="panel-kicker">Painel oficial do casal</p>
-          <h2 id="workspace-title">Preparando o painel do casal...</h2>
+        <nav class="sidebar-nav">
+          <a class="sidebar-link is-active" data-route-link="overview" href="#overview">Visão geral</a>
+          <a class="sidebar-link" data-route-link="register" href="#register">Cadastrar item</a>
+          <a class="sidebar-link" data-route-link="items" href="#items">Itens e pagamentos</a>
+          <a class="sidebar-link" data-route-link="checklist" href="#checklist">Checklist</a>
+        </nav>
+
+        <div class="sidebar-section">
+          <p class="sidebar-label">Painel</p>
+          <div class="sidebar-status-card">
+            <span class="sidebar-status-dot"></span>
+            <div>
+              <strong>Status compartilhado</strong>
+              <p id="sync-status" class="sync-status topbar-sync-status">Preparando painel...</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="app-topbar-copy">
+            <p class="eyebrow">Planejamento do casamento</p>
+            <h1 class="topbar-title">Reta do Sim</h1>
+            <p class="topbar-subtitle">Organize custos, pagamentos e ressarcimentos com uma interface clara, colaborativa e direta.</p>
+          </div>
+
+          <div class="app-topbar-actions">
+            <label class="workspace-share-field topbar-share-field">
+              Link oficial
+              <input id="share-link" type="text" readonly value="" />
+            </label>
+            <button id="copy-share-link" type="button" class="primary-button">Copiar link</button>
+          </div>
+        </header>
+
+        <section class="workspace-bar" aria-label="Painel compartilhável">
+          <div class="workspace-copy">
+            <p class="panel-kicker">Painel oficial do casal</p>
+            <h2 id="workspace-title">Preparando o painel do casal...</h2>
+            <p id="workspace-description" class="panel-intro">
+              Cada casal usa um link próprio. Quem tiver esse link poderá editar o mesmo painel.
+            </p>
+          </div>
+
           <div class="workspace-name-editor">
             <label class="workspace-name-field">
               Nome do casal
@@ -47,23 +80,23 @@
             </label>
             <button id="save-workspace-name" type="button" class="secondary-button">Salvar nome</button>
           </div>
-          <p id="workspace-description" class="panel-intro">
-            Cada casal usa um link próprio. Quem tiver esse link poderá editar o mesmo painel.
-          </p>
-        </div>
+        </section>
 
-        <div class="workspace-actions">
-          <label class="workspace-share-field">
-            Link oficial
-            <input id="share-link" type="text" readonly value="" />
-          </label>
-          <div class="workspace-buttons">
-            <button id="copy-share-link" type="button" class="primary-button">Copiar link</button>
+        <section class="guidance-strip" id="guidance-strip">
+          <div class="guidance-copy">
+            <p class="panel-kicker">Próximos passos</p>
+            <h2 id="guidance-title">Vamos montar a base do painel.</h2>
+            <p id="guidance-body" class="panel-intro">
+              Cadastre os primeiros itens para o painel começar a mostrar prioridades reais.
+            </p>
           </div>
-        </div>
-      </section>
+          <div class="guidance-actions">
+            <button id="guidance-primary" type="button" class="primary-button">Adicionar primeiro item</button>
+            <button id="guidance-secondary" type="button" class="ghost-button">Ir para checklist geral</button>
+          </div>
+        </section>
 
-      <section id="onboarding-panel" class="onboarding-panel is-hidden" aria-label="Comece por aqui">
+        <section id="onboarding-panel" class="onboarding-panel is-hidden" aria-label="Comece por aqui">
         <div class="onboarding-hero">
           <div class="onboarding-copy">
             <p class="panel-kicker">Comece por aqui</p>
@@ -118,62 +151,119 @@
             </button>
           </div>
         </section>
-      </section>
-
-      <main id="dashboard-shell" class="dashboard">
-        <section id="guidance-strip" class="guidance-strip">
-          <div class="guidance-copy">
-            <p class="panel-kicker">Próximos passos</p>
-            <h2 id="guidance-title">Vamos montar a base do painel.</h2>
-            <p id="guidance-body" class="panel-intro">
-              Cadastre os primeiros itens para o painel começar a mostrar prioridades reais.
-            </p>
-          </div>
-          <div class="guidance-actions">
-            <button id="guidance-primary" type="button" class="primary-button">Adicionar primeiro item</button>
-            <button id="guidance-secondary" type="button" class="ghost-button">Ir para checklist geral</button>
-          </div>
-        </section>
-        <section class="summary-grid" aria-label="Resumo geral">
-          <article class="metric-card">
-            <div class="metric-head">
-              <span class="metric-icon">Caixa</span>
-              <span class="metric-label">Ainda a pagar</span>
-            </div>
-            <strong id="metric-total" class="metric-value">0</strong>
-            <p class="metric-detail">Quanto ainda falta sair do caixa para quitar tudo.</p>
-          </article>
-
-          <article class="metric-card">
-            <div class="metric-head">
-              <span class="metric-icon">Pago</span>
-              <span class="metric-label">Pago até agora</span>
-            </div>
-            <strong id="metric-settled" class="metric-value">R$ 0,00</strong>
-            <p class="metric-detail">Quanto já foi efetivamente pago aos fornecedores.</p>
-          </article>
-
-          <article class="metric-card accent">
-            <div class="metric-head">
-              <span class="metric-icon">Líquido</span>
-              <span class="metric-label">Desembolso líquido</span>
-            </div>
-            <strong id="metric-net-outflow" class="metric-value">R$ 0,00</strong>
-            <p class="metric-detail">Quanto ainda deve sair do seu bolso após abater os valores a receber.</p>
-          </article>
-
-          <article class="metric-card">
-            <div class="metric-head">
-              <span class="metric-icon">Volta</span>
-              <span class="metric-label">A receber</span>
-            </div>
-            <strong id="metric-attention" class="metric-value">0</strong>
-            <p class="metric-detail">Valor que ainda precisa voltar para você via ressarcimento.</p>
-          </article>
         </section>
 
-        <section class="content-grid">
-          <section id="item-form-panel" class="panel form-panel">
+        <main id="dashboard-shell" class="dashboard">
+          <section class="route-page" data-route="overview">
+            <div class="page-header">
+              <div>
+                <p class="panel-kicker">Painel geral</p>
+                <h2 class="page-title">Visão geral do casamento</h2>
+                <p class="page-subtitle">Aqui vocês enxergam o panorama financeiro e o que pede ação imediata, sem misturar cadastro com execução.</p>
+              </div>
+            </div>
+
+            <section class="summary-stage" aria-label="Resumo geral">
+              <article class="metric-card metric-card-featured">
+                <div class="metric-head">
+                  <span class="metric-icon">Caixa</span>
+                  <span class="metric-label">Ainda a pagar</span>
+                </div>
+                <strong id="metric-total" class="metric-value">0</strong>
+                <p class="metric-detail">Valor total que ainda precisa sair do caixa para encerrar os pagamentos cadastrados.</p>
+              </article>
+
+              <article class="metric-card metric-card-rail">
+                <div class="metric-head">
+                  <span class="metric-icon">Pago</span>
+                  <span class="metric-label">Pago até agora</span>
+                </div>
+                <strong id="metric-settled" class="metric-value">R$ 0,00</strong>
+                <p class="metric-detail">Quanto já foi efetivamente pago aos fornecedores.</p>
+              </article>
+
+              <article class="metric-card metric-card-rail accent">
+                <div class="metric-head">
+                  <span class="metric-icon">Líquido</span>
+                  <span class="metric-label">Desembolso líquido</span>
+                </div>
+                <strong id="metric-net-outflow" class="metric-value">R$ 0,00</strong>
+                <p class="metric-detail">O que ainda deve sair do bolso após abater os valores a receber.</p>
+              </article>
+
+              <article class="metric-card metric-card-rail">
+                <div class="metric-head">
+                  <span class="metric-icon">Volta</span>
+                  <span class="metric-label">A receber</span>
+                </div>
+                <strong id="metric-attention" class="metric-value">0</strong>
+                <p class="metric-detail">Valor que ainda precisa voltar para você via ressarcimento.</p>
+              </article>
+            </section>
+
+            <section class="overview-grid">
+              <section class="panel list-panel quick-nav-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="panel-kicker">Fluxo por etapa</p>
+                    <h2>Escolha o próximo passo</h2>
+                    <p class="panel-intro list-intro">Cada parte do processo ganhou uma área própria para ficar mais leve de usar no dia a dia.</p>
+                  </div>
+                </div>
+
+                <div class="quick-nav-list">
+                  <article class="quick-nav-item">
+                    <div class="quick-nav-copy">
+                      <p class="entry-category">Cadastro</p>
+                      <h3>Registrar novo item</h3>
+                      <p>Abra o formulário em uma página separada e cadastre fornecedor, pagamento, ressarcimento e tarefas.</p>
+                    </div>
+                    <button type="button" class="secondary-button" data-nav-route="register">Abrir cadastro</button>
+                  </article>
+
+                  <article class="quick-nav-item">
+                    <div class="quick-nav-copy">
+                      <p class="entry-category">Acompanhamento</p>
+                      <h3>Ver itens e pagamentos</h3>
+                      <p>Consulte todos os itens financeiros, filtre por status e edite o que precisar sem disputar espaço com o formulário.</p>
+                    </div>
+                    <button type="button" class="secondary-button" data-nav-route="items">Abrir itens</button>
+                  </article>
+
+                  <article class="quick-nav-item">
+                    <div class="quick-nav-copy">
+                      <p class="entry-category">Execução</p>
+                      <h3>Abrir checklist completo</h3>
+                      <p>Centralize as pendências gerais da reta final em uma tela própria, separada dos custos.</p>
+                    </div>
+                    <button type="button" class="secondary-button" data-nav-route="checklist">Abrir checklist</button>
+                  </article>
+                </div>
+              </section>
+
+              <section class="attention-panel" aria-labelledby="attention-title">
+                <div class="attention-header">
+                  <div>
+                    <p class="panel-kicker">Olhar rápido</p>
+                    <h3 id="attention-title">Pedem atenção agora</h3>
+                    <p class="attention-subtitle">Os itens mais próximos de vencer ou com retorno financeiro ainda pendente aparecem primeiro.</p>
+                  </div>
+                </div>
+                <div id="attention-list" class="attention-list"></div>
+              </section>
+            </section>
+          </section>
+
+          <section class="route-page" data-route="register">
+            <div class="page-header">
+              <div>
+                <p class="panel-kicker">Cadastro de item</p>
+                <h2 class="page-title">Registrar item financeiro</h2>
+                <p class="page-subtitle">Essa área é focada só no cadastro, para vocês avançarem com calma sem misturar visão geral e checklist.</p>
+              </div>
+            </div>
+
+            <section id="item-form-panel" class="panel form-panel">
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">Cadastro rápido</p>
@@ -419,11 +509,37 @@
                     <input
                       id="task-input"
                       type="text"
-                      placeholder="Ex.: confirmar horário, cobrar retorno, enviar comprovante"
+                      placeholder="Descreva a tarefa do item"
                     />
+                    <select id="task-category">
+                      <option value="">Categoria da tarefa</option>
+                      <option>Local</option>
+                      <option>Buffet</option>
+                      <option>Bebidas</option>
+                      <option>Confeitaria</option>
+                      <option>Decoração</option>
+                      <option>Foto e vídeo</option>
+                      <option>Música</option>
+                      <option>Cerimônia</option>
+                      <option>Trajes</option>
+                      <option>Beleza</option>
+                      <option>Papelaria</option>
+                      <option>Logística</option>
+                      <option>Lua de mel</option>
+                      <option>Financeiro</option>
+                      <option>Outro</option>
+                    </select>
                     <input id="task-date-input" type="date" />
                     <button id="add-task" type="button" class="secondary-button">Adicionar tarefa</button>
                   </div>
+                  <p class="task-helper-copy">Dica: se a tarefa pertencer a uma categoria do item, ela será usada para organizar melhor a execução.</p>
+                  <label class="task-link-field">
+                    Vincular tarefa já existente
+                    <select id="link-existing-task">
+                      <option value="">Selecione uma tarefa já cadastrada</option>
+                    </select>
+                    <span class="field-help">Use isso para reaproveitar tarefas do checklist ou de outros itens sem precisar digitar tudo de novo.</span>
+                  </label>
 
                   <p id="task-summary" class="task-summary">Nenhuma tarefa criada por enquanto.</p>
                   <div id="task-list-editor" class="task-list-editor"></div>
@@ -445,38 +561,62 @@
                 As alterações serão salvas no painel compartilhado.
               </p>
             </form>
+            </section>
           </section>
 
-          <section class="panel list-panel">
-            <div class="panel-heading">
+          <section class="route-page" data-route="items">
+            <div class="page-header">
               <div>
-                <p class="panel-kicker">Central de acompanhamento</p>
-                <h2>Visão dos itens</h2>
-                <p class="panel-intro list-intro">Priorize vencimentos, acompanhe ressarcimentos e revise os itens financeiros em uma área mais operacional.</p>
+                <p class="panel-kicker">Itens e pagamentos</p>
+                <h2 class="page-title">Acompanhar fornecedores e despesas</h2>
+                <p class="page-subtitle">Use esta tela para revisar tudo o que já foi cadastrado, filtrar por status e editar um item específico.</p>
               </div>
             </div>
 
-            <div class="toolbar toolbar-shell">
-              <label class="toolbar-field">
-                Buscar
-                <input id="search" type="search" placeholder="Fornecedor, pessoa, ressarcimento..." />
-              </label>
+            <section class="panel list-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Central de acompanhamento</p>
+                  <h2>Visão dos itens</h2>
+                  <p class="panel-intro list-intro">Priorize vencimentos, acompanhe ressarcimentos e revise os itens financeiros em uma área mais operacional.</p>
+                </div>
+              </div>
 
-              <label class="toolbar-field">
-                Filtrar por pagamento
-                <select id="status-filter">
-                  <option value="todos">Todos</option>
-                  <option value="nao-pago">Não pago</option>
-                  <option value="sinal-pago">Sinal pago</option>
-                  <option value="entrada-paga">Entrada paga</option>
-                  <option value="pago-50">Pago 50%</option>
-                  <option value="pago-parcial">Pago parcial</option>
-                  <option value="pago-100">Pago completo (100%)</option>
-                </select>
-              </label>
+              <div class="toolbar toolbar-shell">
+                <label class="toolbar-field">
+                  Buscar
+                  <input id="search" type="search" placeholder="Fornecedor, pessoa, ressarcimento..." />
+                </label>
+
+                <label class="toolbar-field">
+                  Filtrar por pagamento
+                  <select id="status-filter">
+                    <option value="todos">Todos</option>
+                    <option value="nao-pago">Não pago</option>
+                    <option value="sinal-pago">Sinal pago</option>
+                    <option value="entrada-paga">Entrada paga</option>
+                    <option value="pago-50">Pago 50%</option>
+                    <option value="pago-parcial">Pago parcial</option>
+                    <option value="pago-100">Pago completo (100%)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="entry-list" class="entry-list" aria-live="polite"></div>
+            </section>
+          </section>
+
+          <section class="route-page" data-route="checklist">
+            <div class="page-header">
+              <div>
+                <p class="panel-kicker">Checklist geral</p>
+                <h2 class="page-title">Executar a reta final</h2>
+                <p class="page-subtitle">Tudo que é pendência operacional e não depende de um custo específico fica aqui, em uma página própria.</p>
+              </div>
             </div>
 
-            <section id="global-tasks-panel" class="panel-subsection global-tasks-panel" aria-labelledby="global-tasks-title">
+            <section class="panel list-panel">
+              <section id="global-tasks-panel" class="panel-subsection global-tasks-panel" aria-labelledby="global-tasks-title">
               <div class="attention-header">
                 <div>
                   <p class="panel-kicker">Checklist geral</p>
@@ -489,31 +629,38 @@
                 <input
                   id="global-task-input"
                   type="text"
-                  placeholder="Ex.: revisar lista final, separar documentos, confirmar horários"
+                  placeholder="Descreva a tarefa do checklist"
                 />
+                <select id="global-task-category">
+                  <option value="">Categoria da tarefa</option>
+                  <option>Local</option>
+                  <option>Buffet</option>
+                  <option>Bebidas</option>
+                  <option>Confeitaria</option>
+                  <option>Decoração</option>
+                  <option>Foto e vídeo</option>
+                  <option>Música</option>
+                  <option>Cerimônia</option>
+                  <option>Trajes</option>
+                  <option>Beleza</option>
+                  <option>Papelaria</option>
+                  <option>Logística</option>
+                  <option>Lua de mel</option>
+                  <option>Financeiro</option>
+                  <option>Outro</option>
+                </select>
                 <input id="global-task-date-input" type="date" />
                 <button id="add-global-task" type="button" class="secondary-button">Adicionar tarefa</button>
               </div>
+              <p class="task-helper-copy">Use o checklist geral para pendências que não dependem de um fornecedor específico.</p>
 
               <p id="global-task-summary" class="task-summary">Nenhuma tarefa geral criada por enquanto.</p>
               <div id="global-task-list" class="task-list-editor global-task-list"></div>
             </section>
-
-            <section class="attention-panel" aria-labelledby="attention-title">
-              <div class="attention-header">
-                <div>
-                  <p class="panel-kicker">Olhar rápido</p>
-                  <h3 id="attention-title">Pedem atenção agora</h3>
-                  <p class="attention-subtitle">Os itens mais próximos de vencer ou com retorno financeiro ainda pendente aparecem primeiro.</p>
-                </div>
-              </div>
-              <div id="attention-list" class="attention-list"></div>
             </section>
-
-            <div id="entry-list" class="entry-list" aria-live="polite"></div>
           </section>
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
 
     <template id="entry-template">

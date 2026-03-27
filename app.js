@@ -103,6 +103,7 @@ const state = {
   onboardingDismissed: false,
   paymentStatusManuallyEdited: false,
   syncingPaymentStatus: false,
+  currentRoute: "overview",
 };
 
 const defaultPeople = ["Noivos"];
@@ -116,6 +117,9 @@ const stepContent = {
 
 const elements = {
   dashboardShell: document.querySelector("#dashboard-shell"),
+  routePages: [...document.querySelectorAll(".route-page")],
+  navLinks: [...document.querySelectorAll("[data-route-link]")],
+  navRouteButtons: [...document.querySelectorAll("[data-nav-route]")],
   onboardingPanel: document.querySelector("#onboarding-panel"),
   startOnboarding: document.querySelector("#start-onboarding"),
   skipOnboarding: document.querySelector("#skip-onboarding"),
@@ -158,11 +162,14 @@ const elements = {
   stepProgressBar: document.querySelector("#step-progress-bar"),
   finalFormActions: document.querySelector("#final-form-actions"),
   taskInput: document.querySelector("#task-input"),
+  taskCategory: document.querySelector("#task-category"),
   taskDateInput: document.querySelector("#task-date-input"),
+  linkExistingTask: document.querySelector("#link-existing-task"),
   addTask: document.querySelector("#add-task"),
   taskSummary: document.querySelector("#task-summary"),
   taskListEditor: document.querySelector("#task-list-editor"),
   globalTaskInput: document.querySelector("#global-task-input"),
+  globalTaskCategory: document.querySelector("#global-task-category"),
   globalTaskDateInput: document.querySelector("#global-task-date-input"),
   addGlobalTask: document.querySelector("#add-global-task"),
   globalTaskSummary: document.querySelector("#global-task-summary"),
@@ -199,6 +206,8 @@ initialize();
 
 async function initialize() {
   bindEvents();
+  state.currentRoute = getRouteFromHash();
+  applyCurrentRoute({ replaceHash: !window.location.hash });
   render();
   renderPersonOptions();
   renderTaskEditor();
@@ -210,6 +219,7 @@ async function initialize() {
 }
 
 function bindEvents() {
+  window.addEventListener("hashchange", handleHashChange);
   elements.form.addEventListener("submit", handleSubmit);
   elements.clearForm.addEventListener("click", resetForm);
   elements.loadSample.addEventListener("click", loadSampleData);
@@ -228,6 +238,11 @@ function bindEvents() {
   });
   elements.guidancePrimary.addEventListener("click", handleGuidancePrimaryAction);
   elements.guidanceSecondary.addEventListener("click", handleGuidanceSecondaryAction);
+  elements.navRouteButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      navigateToRoute(button.dataset.navRoute);
+    });
+  });
   elements.saveWorkspaceName.addEventListener("click", handleWorkspaceNameSave);
   elements.workspaceNameInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -267,6 +282,7 @@ function bindEvents() {
   elements.reimbursementPerson.addEventListener("change", () => {
     handlePersonSelectChange(elements.reimbursementPerson, "reimbursementPerson");
   });
+  elements.linkExistingTask.addEventListener("change", handleLinkExistingTask);
   elements.customPerson.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -444,12 +460,14 @@ function handleWorkspaceNameSave() {
 
 function startOnboardingFlow() {
   dismissOnboarding();
+  navigateToRoute("register");
   setCurrentStep(1);
   focusForm();
 }
 
 function skipOnboardingFlow() {
   dismissOnboarding();
+  navigateToRoute("overview");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -462,6 +480,7 @@ function applyQuickStartTemplate(templateKey) {
 
   dismissOnboarding();
   resetForm();
+  navigateToRoute("register");
   elements.title.value = template.title;
   elements.category.value = template.category;
   elements.notes.value = template.notes;
@@ -477,19 +496,76 @@ function dismissOnboarding() {
 }
 
 function handleGuidancePrimaryAction() {
+  navigateToRoute("register");
   setCurrentStep(1);
   focusForm();
 }
 
 function handleGuidanceSecondaryAction() {
-  elements.globalTasksPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  navigateToRoute("checklist");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function focusForm() {
+  navigateToRoute("register");
   elements.itemFormPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   window.setTimeout(() => {
     elements.title.focus();
   }, 200);
+}
+
+function handleHashChange() {
+  state.currentRoute = getRouteFromHash();
+  applyCurrentRoute();
+}
+
+function getRouteFromHash() {
+  const rawHash = window.location.hash.replace(/^#\/?/, "");
+  const routeAliases = {
+    "": "overview",
+    overview: "overview",
+    register: "register",
+    items: "items",
+    checklist: "checklist",
+    "dashboard-shell": "overview",
+    "item-form-panel": "register",
+    "global-tasks-panel": "checklist",
+    "attention-title": "overview",
+  };
+
+  return routeAliases[rawHash] || "overview";
+}
+
+function navigateToRoute(route) {
+  if (!route) {
+    return;
+  }
+
+  const targetHash = `#${route}`;
+
+  if (window.location.hash === targetHash) {
+    state.currentRoute = route;
+    applyCurrentRoute();
+    return;
+  }
+
+  window.location.hash = targetHash;
+}
+
+function applyCurrentRoute({ replaceHash = false } = {}) {
+  const route = state.currentRoute || "overview";
+
+  elements.routePages.forEach((page) => {
+    page.classList.toggle("is-hidden", page.dataset.route !== route);
+  });
+
+  elements.navLinks.forEach((link) => {
+    link.classList.toggle("is-active", link.dataset.routeLink === route);
+  });
+
+  if (replaceHash) {
+    window.history.replaceState(null, "", `#${route}`);
+  }
 }
 
 async function copyShareLink() {
@@ -617,7 +693,10 @@ function resetForm() {
   elements.entryId.value = "";
   elements.customPerson.value = "";
   elements.isReimbursable.checked = false;
+  elements.taskCategory.value = "";
   elements.taskDateInput.value = "";
+  elements.linkExistingTask.value = "";
+  elements.globalTaskCategory.value = "";
   elements.globalTaskDateInput.value = "";
   state.currentTasks = [];
   resetPaymentStatusSyncState();
@@ -897,6 +976,7 @@ function renderEntries() {
 }
 
 function populateForm(entry) {
+  navigateToRoute("register");
   elements.entryId.value = entry.id;
   elements.category.value = entry.category;
   elements.title.value = entry.title;
@@ -920,7 +1000,7 @@ function populateForm(entry) {
   renderTaskEditor();
   updateFormState();
   setCurrentStep(1);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  focusForm();
 }
 
 function setSyncStatus(message) {
@@ -979,6 +1059,7 @@ async function persistWorkspace(successMessage = "") {
 function renderTaskEditor() {
   elements.taskListEditor.innerHTML = "";
   const tasks = sortTasksByCompletion(state.currentTasks);
+  renderTaskLinkOptions();
 
   if (tasks.length === 0) {
     elements.taskSummary.textContent = "Nenhuma tarefa criada por enquanto.";
@@ -1016,7 +1097,7 @@ function renderTaskEditor() {
     title.className = "task-row-title";
     title.textContent = task.title;
     meta.className = "task-row-meta";
-    meta.textContent = task.dueDate ? `Para ${formatShortDate(task.dueDate)}` : "Sem data";
+    meta.textContent = buildTaskMeta(task);
 
     editButton.type = "button";
     editButton.className = "task-edit-button";
@@ -1051,6 +1132,7 @@ function renderGlobalTasks() {
   }
 
   const tasks = sortTasksByCompletion(state.generalTasks);
+  renderTaskLinkOptions();
 
   if (tasks.length === 0) {
     elements.globalTaskSummary.textContent =
@@ -1087,7 +1169,7 @@ function renderGlobalTasks() {
     title.className = "task-row-title";
     title.textContent = task.title;
     meta.className = "task-row-meta";
-    meta.textContent = task.dueDate ? `Para ${formatShortDate(task.dueDate)}` : "Sem data";
+    meta.textContent = buildTaskMeta(task);
 
     editButton.type = "button";
     editButton.className = "task-edit-button";
@@ -1121,6 +1203,7 @@ function addTaskToCurrentEntry() {
   state.currentTasks.push({
     id: crypto.randomUUID(),
     title,
+    category: elements.taskCategory.value || elements.category.value || "",
     done: false,
     dueDate: elements.taskDateInput.value || "",
     createdAt: new Date().toISOString(),
@@ -1128,7 +1211,9 @@ function addTaskToCurrentEntry() {
   state.currentTasks = sortTasksByCompletion(state.currentTasks);
 
   elements.taskInput.value = "";
+  elements.taskCategory.value = "";
   elements.taskDateInput.value = "";
+  elements.linkExistingTask.value = "";
   renderTaskEditor();
 }
 
@@ -1142,6 +1227,7 @@ function addGlobalTask() {
   state.generalTasks.push({
     id: crypto.randomUUID(),
     title,
+    category: elements.globalTaskCategory.value || "",
     done: false,
     dueDate: elements.globalTaskDateInput.value || "",
     createdAt: new Date().toISOString(),
@@ -1149,6 +1235,7 @@ function addGlobalTask() {
   state.generalTasks = sortTasksByCompletion(state.generalTasks);
 
   elements.globalTaskInput.value = "";
+  elements.globalTaskCategory.value = "";
   elements.globalTaskDateInput.value = "";
   render();
   markMemoryChanges();
@@ -1173,8 +1260,12 @@ function normalizeTasks(tasks = []) {
       .map((task) => ({
         id: task.id || crypto.randomUUID(),
         title: task.title.trim(),
+        category: task.category || "",
         done: Boolean(task.done),
         dueDate: task.dueDate || "",
+        sourceTaskId: task.sourceTaskId || "",
+        sourceScope: task.sourceScope || "",
+        linkedFromLabel: task.linkedFromLabel || "",
         createdAt: task.createdAt || new Date().toISOString(),
       }))
   );
@@ -1215,7 +1306,7 @@ function renderEntryTasks(entry, container, listElement, countElement) {
     title.className = "task-row-title";
     title.textContent = task.title;
     meta.className = "task-row-meta";
-    meta.textContent = task.dueDate ? `Para ${formatShortDate(task.dueDate)}` : "Sem data";
+    meta.textContent = buildTaskMeta(task);
 
     content.append(title, meta);
     row.append(checkbox, content);
@@ -1243,6 +1334,39 @@ function closeTaskModal() {
   elements.taskModal.setAttribute("aria-hidden", "true");
   elements.taskModalTitleInput.value = "";
   elements.taskModalDateInput.value = "";
+}
+
+function handleLinkExistingTask() {
+  const selectedKey = elements.linkExistingTask.value;
+
+  if (!selectedKey) {
+    return;
+  }
+
+  const selectedTask = getLinkableTasks().find((task) => getTaskSourceKey(task) === selectedKey);
+
+  if (!selectedTask) {
+    elements.linkExistingTask.value = "";
+    return;
+  }
+
+  state.currentTasks = sortTasksByCompletion([
+    ...state.currentTasks,
+    {
+      id: crypto.randomUUID(),
+      title: selectedTask.title,
+      category: selectedTask.category || "",
+      done: Boolean(selectedTask.done),
+      dueDate: selectedTask.dueDate || "",
+      sourceTaskId: selectedTask.sourceTaskId || selectedTask.id,
+      sourceScope: selectedTask.sourceScope || "linked",
+      linkedFromLabel: selectedTask.linkedFromLabel || "",
+      createdAt: new Date().toISOString(),
+    },
+  ]);
+
+  elements.linkExistingTask.value = "";
+  renderTaskEditor();
 }
 
 function saveTaskModalChanges() {
@@ -1384,6 +1508,75 @@ function getImportedPeople(entries) {
       entries.flatMap((entry) => [entry.person, entry.reimbursementPerson]).filter(Boolean)
     ),
   ];
+}
+
+function buildTaskMeta(task) {
+  const parts = [];
+
+  if (task.category) {
+    parts.push(`Categoria: ${task.category}`);
+  }
+
+  parts.push(task.dueDate ? `Prazo: ${formatShortDate(task.dueDate)}` : "Prazo: sem data");
+
+  if (task.linkedFromLabel) {
+    parts.push(`Origem: ${task.linkedFromLabel}`);
+  }
+
+  return parts.join(" · ");
+}
+
+function renderTaskLinkOptions() {
+  const availableTasks = getLinkableTasks();
+  elements.linkExistingTask.innerHTML = availableTasks.length
+    ? '<option value="">Selecione uma tarefa já cadastrada</option>'
+    : '<option value="">Nenhuma tarefa disponível para vincular</option>';
+  elements.linkExistingTask.disabled = availableTasks.length === 0;
+
+  availableTasks.forEach((task) => {
+    const option = document.createElement("option");
+    option.value = getTaskSourceKey(task);
+    option.textContent = `${task.title}${task.linkedFromLabel ? ` · ${task.linkedFromLabel}` : ""}${task.category ? ` · ${task.category}` : ""}`;
+    elements.linkExistingTask.appendChild(option);
+  });
+}
+
+function getLinkableTasks() {
+  const currentKeys = new Set(
+    state.currentTasks.map((task) => getTaskSourceKey(task, "current")).filter(Boolean)
+  );
+
+  const globalTasks = normalizeTasks(state.generalTasks).map((task) => ({
+    ...task,
+    sourceTaskId: task.sourceTaskId || task.id,
+    sourceScope: "global",
+    linkedFromLabel: "Checklist geral",
+  }));
+
+  const entryTasks = state.entries.flatMap((entry) =>
+    normalizeTasks(entry.tasks || []).map((task) => ({
+      ...task,
+      sourceTaskId: task.sourceTaskId || task.id,
+      sourceScope: `entry:${entry.id}`,
+      linkedFromLabel: entry.title,
+    }))
+  );
+
+  return sortTasksByCompletion([...globalTasks, ...entryTasks]).filter((task) => {
+    const key = getTaskSourceKey(task);
+    return key && !currentKeys.has(key);
+  });
+}
+
+function getTaskSourceKey(task, fallbackScope = "") {
+  const sourceId = task.sourceTaskId || task.id;
+  const sourceScope = task.sourceScope || fallbackScope;
+
+  if (!sourceId || !sourceScope) {
+    return "";
+  }
+
+  return `${sourceScope}:${sourceId}`;
 }
 
 function buildStoragePayload() {
@@ -1690,6 +1883,7 @@ function renderAttention() {
     focusButton.type = "button";
     focusButton.className = "attention-action secondary";
     focusButton.textContent = entry.nextPaymentDate ? `Vence ${formatShortDate(entry.nextPaymentDate)}` : "Sem vencimento";
+    focusButton.addEventListener("click", () => navigateToRoute("items"));
     topLine.append(titleWrap, meta);
     actions.append(editButton, focusButton);
     item.append(topLine, finance, notes, actions);
